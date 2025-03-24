@@ -10,7 +10,7 @@ app = Flask(__name__)
 # Telegram Bot Configuration
 API_ID = 27303400
 API_HASH = "bcfc2fab8ad45bccdd13270669b16aef"
-BOT_TOKEN = "8116081382:AAEyQG058WcYHr87ytS6c6PHN2wA2Loy6iw"
+BOT_TOKEN = "7516781828:AAFWWfcB-u5LZpZmBGjtAm_XWgK4YkRYTng"
 
 import json
 from datetime import datetime
