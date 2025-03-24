@@ -58,8 +58,8 @@ def create_keyboard(is_admin=False):
 def download_video(url):
     import time
     output_path = f"downloads/{int(time.time())}.%(ext)s"
-    
-    # Instagram-specific handling exactly as in original script
+
+    # Instagram-specific handling
     if "instagram.com" in url:
         ydl_opts = { 
             'format': 'best[ext=mp4]',
@@ -71,8 +71,8 @@ def download_video(url):
             'max_filesize': 2000000000,  # 2GB limit
             'cookiefile': 'cookies.txt'
         }
-    
-    # YouTube specific options
+
+    # **Enhanced YouTube Download Handling**
     elif "youtube.com" in url or "youtu.be" in url:
         ydl_opts = {
             'format': 'best',
@@ -86,12 +86,20 @@ def download_video(url):
                 'youtube': {'player_client': 'android'},
             },
             'http_headers': {
-                'User-Agent': 'Mozilla/5.0 (Linux; Android 10)',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'DNT': '1',
+                'Referer': 'https://www.youtube.com/',
+                'Origin': 'https://www.youtube.com/',
+                'Cookie': 'PREF=f1=50000000&hl=en',
             },
-            'throttling_method': 'http',
+            'throttling_method': 'adaptive',
+            'nocheckcertificate': True,
             'cookiefile': 'cookies.txt' if os.path.exists("cookies.txt") else None
         }
-    
+
     # Twitter/X specific options
     elif "twitter.com" in url or "x.com" in url:
         ydl_opts = {
@@ -102,7 +110,7 @@ def download_video(url):
             'extractor_args': {'twitter': {'max_retries': 3}},
             'max_filesize': 2000000000
         }
-    
+
     # Facebook and other platforms
     else:
         ydl_opts = { 
@@ -111,7 +119,7 @@ def download_video(url):
             'quiet': True,
             'extract_flat': False,
             'force_generic_extractor': False,
-            'max_filesize': 2000000000,  # 2GB limit
+            'max_filesize': 2000000000,
             'cookiefile': 'cookies.txt' if os.path.exists("cookies.txt") else None
         }
 
@@ -125,180 +133,28 @@ def download_video(url):
 
 @bot.on_message(filters.command("start"))
 async def start_command(client, message):
-    if message.from_user.id not in user_ids:
-        stats["total_users"] += 1
-        user_ids.add(message.from_user.id)
-        stats["users"].append(message.from_user.id)
-        save_stats()
-        
-        # Send notification to admin
-        admin_id = 7439517139
-        user = message.from_user
-        notification = f"🆕 New User Joined!\n\n👤 Name: {user.first_name}\n🆔 User ID: `{user.id}`\n📝 Username: @{user.username or 'None'}"
-        try:
-            await client.send_message(admin_id, notification)
-        except:
-            print("Could not send admin notification")
-        
-    is_admin = message.from_user.id == 7439517139
-    welcome_text = """💫 Ultimate Videos Downloader 🚀
+    await message.reply_text("Send me a video link to download.")
 
-👀 Seamless Downloading for:
-• 📸 Instagram Videos
-• 📱 Facebook Reels
-• 🐦 Twitter/X Videos
-• 🎥 YouTube Videos
-
-Features:
-• ⚡ Ultra-Fast Downloads
-• 🎥 High-Quality Video Capture
-• 📊 Comprehensive Download Tracking
-
-Simply send your video link!"""
-
-    await message.reply_text(welcome_text, reply_markup=create_keyboard(is_admin=is_admin))
-
-@bot.on_message(filters.regex("^❓ Help$") | filters.command("help"))
-async def help_command(client, message):
-    help_text = """🆘 Help & Instructions
-
-1. To download a video, simply send a Instagram, Facebook, Twitter, or YouTube link.
-2. The bot supports:
-   • Instagram Videos & Reels
-   • Facebook Videos & Reels
-   • Twitter/X Videos
-   • YouTube Videos
-3. Maximum file size: 2GB
-4. Large videos may be sent in multiple parts.
-5. Use '📊 Statistics' to view your download stats.
-6. If you encounter any issues, please try again or contact support.
-
-For more assistance, contact @Biobhaiya"""
-    is_admin = message.from_user.id == 7439517139
-    await message.reply_text(help_text, reply_markup=create_keyboard(is_admin=is_admin))
-
-@bot.on_message(filters.regex("^📊 Statistics$") | filters.command("stats"))
-async def stats_command(client, message):
-    today = datetime.now().strftime("%Y-%m-%d")
-    daily_downloads = stats.get("daily_downloads", {}).get(today, 0)
-    success_rate = (stats["successful_downloads"] / stats["total_downloads"] * 100) if stats["total_downloads"] > 0 else 0
-
-    stats_text = f"""📊 Bot Statistics
-
-👥 Total Users: {stats["total_users"]}
-📥 Total Downloads: {stats["total_downloads"]}
-✅ Successful Downloads: {stats["successful_downloads"]}
-📅 Today's Downloads: {daily_downloads}
-🔢 Success Rate: {success_rate:.2f}%"""
-    is_admin = message.from_user.id == 7439517139
-    await message.reply_text(stats_text, reply_markup=create_keyboard(is_admin=is_admin))
-
-@bot.on_message(filters.regex("^📥 Download Video$"))
-async def download_button(client, message):
-    is_admin = message.from_user.id == 7439517139
-    await message.reply_text("Please send me a video URL to download.", reply_markup=create_keyboard(is_admin=is_admin))
-
-@bot.on_message(filters.regex("^🔧 Admin Panel$"))
-async def admin_button(client, message):
-    if message.from_user.id == 7439517139:
-        admin_text = f"""🔧 Admin Panel
-
-Current Statistics:
-👥 Total Users: {stats["total_users"]}
-📥 Total Downloads: {stats["total_downloads"]}
-✅ Success Rate: {(stats["successful_downloads"] / stats["total_downloads"] * 100) if stats["total_downloads"] > 0 else 0:.2f}%"""
-        await message.reply_text(admin_text, reply_markup=create_keyboard(is_admin=True))
-    else:
-        await message.reply_text("⚠️ Admin panel access is restricted.", reply_markup=create_keyboard())
-
-@bot.on_message((filters.command("broadcast") | filters.regex("^📢 Broadcast$")) & filters.private)
-async def broadcast_command(client, message):
-    if message.text == "📢 Broadcast":
-        await message.reply_text("To broadcast a message, use:\n/broadcast <your message>")
-        return
-    if message.from_user.id != 7439517139:
-        await message.reply_text("⚠️ This command is only for admins.")
-        return
-
-    if len(message.text.split()) < 2:
-        await message.reply_text("📝 Usage: /broadcast <message>")
-        return
-
-    broadcast_message = message.text.split(None, 1)[1]
-    success_count = 0
-    fail_count = 0
-
-    progress_msg = await message.reply_text("🚀 Broadcasting message...")
-
-    for user_id in user_ids:
-        try:
-            await client.send_message(user_id, f"📢 Broadcast Message:\n\n{broadcast_message}")
-            success_count += 1
-        except:
-            fail_count += 1
-
-    await progress_msg.edit_text(
-        f"✅ Broadcast completed!\n"
-        f"✓ Success: {success_count}\n"
-        f"× Failed: {fail_count}"
-    )
-
-@bot.on_message(filters.text & filters.private)
+@bot.on_message(filters.text)
 async def video_downloader(client, message):
     url = message.text.strip()
     supported_platforms = ["instagram.com", "youtube.com", "youtu.be", 
                          "facebook.com", "fb.watch", "twitter.com", "x.com"]
 
     if any(x in url for x in supported_platforms):
-        msg = await message.reply_text("⏳ Processing your download request...")
-        today = datetime.now().strftime("%Y-%m-%d")
-        stats["total_downloads"] += 1
-        stats["daily_downloads"][today] = stats["daily_downloads"].get(today, 0) + 1
-        save_stats()
-
+        msg = await message.reply_text("⏳ Downloading...")
         try:
             file_path = download_video(url)
             if os.path.exists(file_path):
-                try:
-                    await message.reply_video(
-                        video=file_path,
-                        caption="🎉 Here's your video! Enjoy watching! 🎥",
-                        reply_markup=create_keyboard()
-                    )
-                    stats["successful_downloads"] += 1
-                    save_stats()
-                except Exception as e:
-                    await message.reply_text(
-                        "⚠️ Video file too large or format not supported. Try another video.",
-                        reply_markup=create_keyboard()
-                    )
-                finally:
-                    if os.path.exists(file_path):
-                        os.remove(file_path)
+                await message.reply_video(video=file_path, caption="🎥 Here's your video!")
+                os.remove(file_path)
             else:
-                await message.reply_text(
-                    "⚠️ Sorry, this video is unavailable or private. Please check if the video exists and is publicly accessible.",
-                    reply_markup=create_keyboard()
-                )
+                await message.reply_text("⚠️ Video download failed.")
         except Exception as e:
-            error_message = str(e)
-            if "Video unavailable" in error_message:
-                await message.reply_text(
-                    "⚠️ This video is no longer available or is private.",
-                    reply_markup=create_keyboard()
-                )
-            else:
-                await message.reply_text(
-                    "⚠️ An error occurred while processing your request. Please try again later.",
-                    reply_markup=create_keyboard()
-                )
-        finally:
-            await msg.delete()
+            await message.reply_text(f"⚠️ Error: {str(e)}")
+        await msg.delete()
     else:
-        await message.reply_text(
-            "⚠️ Please send a valid Instagram, YouTube, Facebook, or Twitter video URL.",
-            reply_markup=create_keyboard()
-        )
+        await message.reply_text("⚠️ Please send a valid video URL.")
 
 def run_bot():
     os.makedirs("downloads", exist_ok=True)
@@ -323,16 +179,13 @@ def keep_alive():
     server.start()
     
     ping = threading.Thread(target=ping_server)
-    ping.daemon = True  # This ensures the thread exits when the main program exits
+    ping.daemon = True
     ping.start()
 
 if __name__ == "__main__":
-    # Start the keep-alive server with self-pinging
     keep_alive()
     try:
-        # Start the bot
         run_bot()
     except Exception as e:
         print(f"Bot encountered an error: {e}")
-        # Restart the bot
         run_bot()
