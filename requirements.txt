@@ -1,0 +1,4 @@
+flask
+pyrogram
+yt-dlp
+tgcrypto
